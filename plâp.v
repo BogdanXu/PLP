@@ -28,10 +28,24 @@ Check ErrorNat.
 Check ErrorString.
 Check bool.
 
+Inductive BoolExp :=
+  | btrue
+  | bfalse
+  | bequal : NatExp -> NatExp -> BoolExp
+  | blessthan : NatExp -> NatExp -> BoolExp
+  | bgreaterthan : NatExp -> NatExp -> BoolExp
+  | band : BoolExp -> BoolExp -> BoolExp
+  | bor : BoolExp -> BoolExp -> BoolExp
+  | bnot : BoolExp -> BoolExp
+  | bnum: ErrorBool -> BoolExp
+  | bstr: string -> BoolExp.
+
 Inductive NatExp:=
-  | anum: ErrorNat -> NatExp
   | apls: NatExp -> NatExp -> NatExp
   | amul: NatExp -> NatExp -> NatExp 
   | asub: NatExp -> NatExp -> NatExp
   | adiv: NatExp -> NatExp -> NatExp 
-  | amod: NatExp -> NatExp -> NatExp.
+  | amod: NatExp -> NatExp -> NatExp
+  | anum: ErrorNat -> NatExp
+  | astr: string -> NatExp.
+

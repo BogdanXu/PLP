@@ -100,9 +100,10 @@ Notation "!Nat X ::= A" := (declare_nat X A)(at level 75).
 Notation "!Str X ::= A" := (declare_string X A)(at level 75).
 Notation "!Bool X ::= A" := (declare_bool X A)(at level 75).
 
-Notation "S1 , S2" := (sequence S1 S2) (at level 80).
+Notation "S1 , S2" := (sequence S1 S2) (at level 78).
 Notation "!while ( A ) { S } " := (while A S)(at level 80). 
 Notation "!for ( A ; B ; C ) { S }" := (A , while B ( S , C )) (at level 97).
+(*Notation "!ifthen ( A ) { S } " := (ifthen A S) (at level 10). (*nu mergea fara lvl foarte mic wat*)*)
 
 
 Reserved Notation "A =[ S ]=> N" (at level 90).
@@ -130,6 +131,8 @@ Check nat_plsmergi.
 
 
 Definition bool_plsmergi :=
+  !Bool "b1" ::= true,
+  !Bool "b2" ::= false.
   
   
   

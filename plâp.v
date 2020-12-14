@@ -7,23 +7,31 @@ Require Vectors.Fin.
 Import EqNotations.
 Local Open Scope nat_scope.
 
-Inductive ErrorNat :=
-  | error_nat : ErrorNat
-  | num : nat -> ErrorNat.
-
 Inductive ErrorBool :=
   | error_bool : ErrorBool
   | boolean : bool -> ErrorBool.
+
+Inductive ErrorNat :=
+  | error_nat : ErrorNat
+  | num : nat -> ErrorNat.
 
 Inductive ErrorString :=
   | error_string : ErrorString
   | str : string -> ErrorString.
 
-Inductive ErrorVector :=
-  | error_vector : ErrorVector
-  | vctr : vector -> ErrorVector.
-
-Coercion num: nat >-> ErrorNat.
 Coercion boolean: bool >-> ErrorBool.
+Coercion num: nat >-> ErrorNat.
 Coercion str: string >-> ErrorString.
-Coercion vctr : 
+
+Check ErrorBool.
+Check ErrorNat.
+Check ErrorString.
+Check bool.
+
+Inductive NatExp:=
+  | anum: ErrorNat -> NatExp
+  | apls: NatExp -> NatExp -> NatExp
+  | amul: NatExp -> NatExp -> NatExp 
+  | asub: NatExp -> NatExp -> NatExp
+  | adiv: NatExp -> NatExp -> NatExp 
+  | amod: NatExp -> NatExp -> NatExp.

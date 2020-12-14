@@ -101,8 +101,8 @@ Notation "!Str X ::= A" := (declare_string X A)(at level 75).
 Notation "!Bool X ::= A" := (declare_bool X A)(at level 75).
 
 Notation "S1 , S2" := (sequence S1 S2) (at level 78).
-Notation "!while ( A ) { S } " := (while A S)(at level 80). 
-Notation "!for ( A ; B ; C ) { S }" := (A , while B ( S , C )) (at level 97).
+Notation "!whiled ( A )==>{ S } " := (while A S)(at level 80). 
+Notation "!ford ( A ; B ; C )==>{ S }" := (A , while B ( S , C )) (at level 80).
 (*Notation "!ifthen ( A ) { S } " := (ifthen A S) (at level 10). (*nu mergea fara lvl foarte mic wat*)*)
 
 
@@ -117,7 +117,7 @@ Coercion bnum: ErrorBool >-> BoolExp.
 Coercion bstr: string >-> BoolExp. 
 Coercion strvar: string >-> StrExp.
 
-Definition nat_plsmergi :=
+Definition plsmergi1 :=
   !Nat "i" ::= 0,
   !Nat "j" ::= 1,
   !Nat "k" ::= 0, 
@@ -127,16 +127,27 @@ Definition nat_plsmergi :=
   "j" !n= 2 !+ 1,
   "j" !n= "i" !/ "j",   "j" !n= "i" !% "j".
 
-Check nat_plsmergi.
+Check plsmergi1.
 
 
-Definition bool_plsmergi :=
+Definition plsmergi2 :=
+  "b1" !b= true,
   !Bool "b1" ::= true,
-  !Bool "b2" ::= false.
+  !Bool "b2" ::= false,
+  !ford ("i" !n= 1 ; "i" !< 5 ; "i" !n= "i" !+ 1)==>{"s1" !s= "s1" !strcat "hello"}.
+
+Check plsmergi2.
   
+Definition plsmergi3 :=
+  !whiled ("k" !> 10)==>{"b1" !b= false}.
+
+Check plsmergi3.
   
-  
-  
+Definition plsmergi4 :=
+  !ford ("i" !n= 1 ; "i" !< 5 ; "i" !n= "i" !+ 1)==>{"b1" !b= false},
+  !Bool "b1" ::= true,
+  !Bool "b2" ::= false,
+  !whiled ("k" !> 10)==>{"b1" !b= false}. 
   
 
 

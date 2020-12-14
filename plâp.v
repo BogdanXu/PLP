@@ -31,21 +31,34 @@ Check ErrorString.
 Check bool.*)
 
 Inductive NatExp:=
-  | apls: NatExp -> NatExp -> NatExp
-  | amul: NatExp -> NatExp -> NatExp 
-  | asub: NatExp -> NatExp -> NatExp
-  | adiv: NatExp -> NatExp -> NatExp 
-  | amod: NatExp -> NatExp -> NatExp
-  | anum: ErrorNat -> NatExp
-  | astr: string -> NatExp.
+  | natpls: NatExp -> NatExp -> NatExp
+  | natmul: NatExp -> NatExp -> NatExp 
+  | natsub: NatExp -> NatExp -> NatExp
+  | natdiv: NatExp -> NatExp -> NatExp 
+  | natmod: NatExp -> NatExp -> NatExp
+  | natnum: ErrorNat -> NatExp
+  | natstr: string -> NatExp.
+
+
+Notation "A !+ B" := (natpls A B)(at level 20, left associativity).
+Notation "A !* B" := (natmul A B)(at level 19, left associativity).
+Notation "A !- B" := (natsub A B)(at level 20, left associativity).
+Notation "A !/ B" := (natdiv A B)(at level 19, left associativity).
+Notation "A !% B" := (natmod A B)(at level 19, left associativity).
+Notation "A !++'" := (natpls A 1)(at level 20, left associativity).
+
 
 Inductive StrExp :=
   | strcat : StrExp -> StrExp -> StrExp
   | strupper : StrExp -> StrExp
   | strlower : StrExp -> StrExp
   | strset : StrExp -> StrExp -> StrExp
-  | strnum : ErrorString -> StrExp
-  | strvar: string -> StrExp.
+  | strnum : ErrorString -> StrExp.
+
+Notation "!strcat S S'" := (strcat S S')(at level 40).
+Notation "!upper S" := (strupper S)(at level 40).
+Notation "!lower S" := (strlower S)(at level 40).
+Notation "!strset S S'" := (strset S S')(at level 40).
 
 Inductive BoolExp :=
   | btrue
@@ -60,19 +73,35 @@ Inductive BoolExp :=
   | bnum: ErrorBool -> BoolExp
   | bstr: string -> BoolExp.
 
-Inductive Stmt :=
-  | nat_decl: string -> NatExp -> Stmt 
-  | bool_decl: string -> BoolExp -> Stmt 
-  | str_decl: string -> StrExp -> Stmt 
+Notation "A !< B" := (blessthan A B) (at level 70).
+Notation "A !> B" := (bgreaterthan A B) (at level 70).
+Notation "!! A" := (bnot A)(at level 71, left associativity).
+Notation "A !&& B" := (band A B)(at level 72, left associativity).
+Notation "A !|| B" := (bor A B)(at level 73, left associativity).
 
-  | nat_assign : string -> NatExp -> Stmt
-  | bool_assign : string -> BoolExp -> Stmt 
+Inductive Stmt :=
+  | declare_nat: string -> NatExp -> Stmt 
+  | declare_string: string -> StrExp -> Stmt 
+  | declare_bool: string -> BoolExp -> Stmt 
+ 
+  | nat_assign : string -> NatExp -> Stmt 
   | str_assign : string -> StrExp -> Stmt 
+  | bool_assign : string -> BoolExp -> Stmt
 
   | while : BoolExp -> Stmt -> Stmt
-  | ifthenelse : BoolExp -> Stmt -> Stmt -> Stmt
   | ifthen : BoolExp -> Stmt -> Stmt
+  | ifelse : BoolExp -> Stmt -> Stmt -> Stmt
   | sequence : Stmt -> Stmt -> Stmt.
 
+Notation "X n= A" := (nat_assign X A)(at level 70).
+Notation "X s= A" := (str_assign X A)(at level 70).
+Notation "X b= A" := (bool_assign X A)(at level 70).
 
+Notation "!Nat X ::= A" := (declare_nat X A)(at level 70).
+Notation "!Str X ::= A" := (declare_string X A)(at level 70).
+Notation "!Bool X ::= A" := (declare_bool X A)(at level 70).
+
+Notation "S1 ;; S2" := (sequence S1 S2) (at level 80).
+Notation "!while ( A )~{ S } " := (while A S)(at level 80). 
+Notation "!for ( A ~ B ~ C )~{ S }" := (A ;; while B ( S ;; C )) (at level 97).
 

@@ -45,17 +45,15 @@ Notation "A !* B" := (natmul A B)(at level 19, left associativity).
 Notation "A !- B" := (natsub A B)(at level 20, left associativity).
 Notation "A !/ B" := (natdiv A B)(at level 19, left associativity).
 Notation "A !% B" := (natmod A B)(at level 19, left associativity).
-Notation "A !++'" := (natpls A 1)(at level 20, left associativity).
-
 
 Inductive StrExp :=
   | strcat : StrExp -> StrExp -> StrExp
   | strupper : StrExp -> StrExp
   | strlower : StrExp -> StrExp
   | strset : StrExp -> StrExp -> StrExp
-  | strnum : ErrorString -> StrExp.
+  | strvar : string -> StrExp.
 
-Notation "!strcat S S'" := (strcat S S')(at level 40).
+Notation "S !strcat S'" := (strcat S S')(at level 40).
 Notation "!upper S" := (strupper S)(at level 40).
 Notation "!lower S" := (strlower S)(at level 40).
 Notation "!strset S S'" := (strset S S')(at level 40).
@@ -78,6 +76,7 @@ Notation "A !> B" := (bgreaterthan A B) (at level 70).
 Notation "!! A" := (bnot A)(at level 71, left associativity).
 Notation "A !&& B" := (band A B)(at level 72, left associativity).
 Notation "A !|| B" := (bor A B)(at level 73, left associativity).
+Notation "A !strcmp B" := (bstrcmp A B)(at level 73, left associativity).
 
 Inductive Stmt :=
   | declare_nat: string -> NatExp -> Stmt 
@@ -93,15 +92,51 @@ Inductive Stmt :=
   | ifelse : BoolExp -> Stmt -> Stmt -> Stmt
   | sequence : Stmt -> Stmt -> Stmt.
 
-Notation "X n= A" := (nat_assign X A)(at level 70).
-Notation "X s= A" := (str_assign X A)(at level 70).
-Notation "X b= A" := (bool_assign X A)(at level 70).
+Notation "X !n= A" := (nat_assign X A)(at level 75).
+Notation "X !s= A" := (str_assign X A)(at level 75).
+Notation "X !b= A" := (bool_assign X A)(at level 75).
 
-Notation "!Nat X ::= A" := (declare_nat X A)(at level 70).
-Notation "!Str X ::= A" := (declare_string X A)(at level 70).
-Notation "!Bool X ::= A" := (declare_bool X A)(at level 70).
+Notation "!Nat X ::= A" := (declare_nat X A)(at level 75).
+Notation "!Str X ::= A" := (declare_string X A)(at level 75).
+Notation "!Bool X ::= A" := (declare_bool X A)(at level 75).
 
-Notation "S1 ;; S2" := (sequence S1 S2) (at level 80).
-Notation "!while ( A )~{ S } " := (while A S)(at level 80). 
-Notation "!for ( A ~ B ~ C )~{ S }" := (A ;; while B ( S ;; C )) (at level 97).
+Notation "S1 , S2" := (sequence S1 S2) (at level 80).
+Notation "!while ( A ) { S } " := (while A S)(at level 80). 
+Notation "!for ( A ; B ; C ) { S }" := (A , while B ( S , C )) (at level 97).
+
+
+Reserved Notation "A =[ S ]=> N" (at level 90).
+Reserved Notation "B ={ S }=> B'" (at level 91).
+Reserved Notation "B ={ S }=> B'" (at level 91).
+Reserved Notation "S -{ Sigma }-> Sigma'" (at level 90).
+
+Coercion natnum: ErrorNat >-> NatExp.
+Coercion natstr: string >-> NatExp. 
+Coercion bnum: ErrorBool >-> BoolExp.
+Coercion bstr: string >-> BoolExp. 
+Coercion strvar: string >-> StrExp.
+
+Definition nat_plsmergi :=
+  !Nat "i" ::= 0,
+  !Nat "j" ::= 1,
+  !Nat "k" ::= 0, 
+  "k" !n= "i" !+ "j", 
+  "j" !n= "j" !- "i",
+  "i" !n= "j" !* "i", 
+  "j" !n= 2 !+ 1,
+  "j" !n= "i" !/ "j",   "j" !n= "i" !% "j".
+
+Check nat_plsmergi.
+
+
+Definition bool_plsmergi :=
+  
+  
+  
+  
+  
+
+
+
+
 

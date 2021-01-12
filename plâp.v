@@ -232,3 +232,18 @@ match M with
 |<<st, mem, max>>-<<gst, gmem, gmax>> => updateLocalAtAdress M addr T
 end.
 
+
+ 
+Definition mem0 : Memory := fun n => error.
+Definition state0 : State := fun x => 0%nat.
+Definition stack0 := <<state0, mem0, 1>>-<<state0, mem0, 1>>.
+
+Definition newPlus (a b : newType) :=
+match a, b with
+| nrType a', nrType b' => match a', b' with
+                        | num n1, num n2 => nrType (n1 + n2)
+                        | _, _ => nrType errNr
+                        end
+| _ , _ => error
+end.
+

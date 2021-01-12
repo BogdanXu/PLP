@@ -30,6 +30,15 @@ Check ErrorNat.
 Check ErrorString.
 Check bool.*)
 
+Inductive StrExp :=
+  | strcat : StrExp -> StrExp -> StrExp
+  | strupper : StrExp -> StrExp
+  | strlower : StrExp -> StrExp
+  | strset : StrExp -> StrExp -> StrExp
+  | strvar : string -> StrExp
+  | strnat : nat -> StrExp
+  | strlen : StrExp -> StrExp.
+
 Inductive NatExp:=
   | natpls: NatExp -> NatExp -> NatExp
   | natmul: NatExp -> NatExp -> NatExp 
@@ -37,8 +46,8 @@ Inductive NatExp:=
   | natdiv: NatExp -> NatExp -> NatExp 
   | natmod: NatExp -> NatExp -> NatExp
   | natnum: ErrorNat -> NatExp
-  | natstr: string -> NatExp.
-Inductive BoolExp :=
+  | natstr: string -> NatExp
+with BoolExp :=
   | btrue
   | bfalse
   | bequal : NatExp -> NatExp -> BoolExp
@@ -57,14 +66,6 @@ Notation "A .- B" := (natsub A B)(at level 20, left associativity).
 Notation "A ./ B" := (natdiv A B)(at level 19, left associativity).
 Notation "A .% B" := (natmod A B)(at level 19, left associativity).
 
-Inductive StrExp :=
-  | strcat : StrExp -> StrExp -> StrExp
-  | strupper : StrExp -> StrExp
-  | strlower : StrExp -> StrExp
-  | strset : StrExp -> StrExp -> StrExp
-  | strvar : string -> StrExp
-  | strnat : nat -> StrExp
-  | strlen : StrExp -> StrExp.
 Notation "S .strcat S'" := (strcat S S')(at level 40).
 Notation ".upper S" := (strupper S)(at level 40).
 Notation ".lower S" := (strlower S)(at level 40).

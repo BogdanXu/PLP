@@ -145,4 +145,90 @@ Inductive newType : Type :=
 | strType : ErrorString -> newType
 | code : Stmt -> newType.
 
+Coercion nrType : ErrorNat >-> newType.
+Coercion boolType : ErrorBool >-> newType.
+Coercion strType : ErrorString >-> newType.
+Coercion code : Stmt >-> newType.
+
+Notation "'int'' V <-- E" := (decl_int V E) (at level 90, right associativity).
+Notation "'bool'' V <-- E" := (decl_bool V E) (at level 90, right associativity).
+Notation "'string'' V <-- E" := (decl_string V E) (at level 90, right associativity).
+Notation "V :N= E" := (asig_nr V E) (at level 90, right associativity).
+Notation "V :B= E" := (asig_bool V E) (at level 90, right associativity).
+Notation "V :S= E" := (asig_str V E) (at level 90, right associativity).
+Notation "S1 ;; S2" := (secventa S1 S2) (at level 93, right associativity).
+Notation "'if'(' B ) 'then'{' S '}end'" := (ifthen B S) (at level 97).
+Notation "'if'(' B ) 'then'{' S1 '}else'{' S2 '}end'" := (ifthenelse B S1 S2) (at level 97).
+Notation "'while'(' B ) 'do'{' S }" := (whileloop B S) (at level 97).
+Notation "'do'{' S '}while(' B )" := (dowhile S B) (at level 97).
+Notation "'for'(' I ; B ; A ) 'do'{' S }" := (forloop I B A S) (at level 97).
+Notation "'write(' S )" := (scrie S) (at level 92).
+Notation "'read(' V )" := (citeste V) (at level 92).
+
+Definition EqForTypes (a b : newType) : bool :=
+match a, b with
+| error, error => true
+| nrType _, nrType _ => true
+| boolType _, boolType _ => true
+| strType _, strType _ => true
+| code _, code _ => true
+| _, _ => false
+end.
+
+Definition Memory := nat -> newType.
+Definition State := Var -> nat.
+Inductive MemoryLayer := 
+| pair : State -> Memory -> nat -> State -> Memory -> nat -> MemoryLayer.
+Notation "<< S , M , N >>-<< GS , GM , GN >>" := (pair S M N GS GM GN) (at level 0).
+
+Definition getVal (m : MemoryLayer) (v : Var) : newType :=
+match m with
+| pair st mem _ gst gmem _ => if (EqForTypes ( mem (st v) ) error) 
+                              then gmem(gst v) else mem(st v)
+end.
+
+Definition getLocalMaxPos (m : MemoryLayer) : nat :=
+match m with
+| pair _ _ max _ _ _  => max
+end.
+
+Definition getLocalAdress (m:MemoryLayer) (v : Var) : nat :=
+match m with
+| pair state _ _ _ _ _ => state v
+end.
+
+Definition getAdress (m:MemoryLayer) (v:Var) : nat :=
+match m with
+| pair st _ _ gst _ _ => if (Nat.eqb (st v) 0%nat) then gst v else st v
+end.
+
+Definition updateState (st : State) (v : Var) (n : nat) : State:= 
+fun x => if (Var_beq x v) then n else st x.
+
+Definition updateMemory (mem : Memory) (n : nat) (val : newType) : Memory :=
+fun n' => if (Nat.eqb n' n) then val else mem n'. 
+
+Definition updateLocal (M : MemoryLayer) (V : Var) (T : newType) (pos : nat) : MemoryLayer :=
+match M with
+|<<st, mem, max>>-<<gst, gmem, gmax>> => if (andb (Nat.eqb pos (getLocalAdress M V) ) (Nat.eqb pos 0) ) then
+       <<st, mem, max>>-<<gst, gmem, gmax>> else
+       <<updateState st V pos, updateMemory mem pos T, 
+      (if (Nat.ltb pos max) then max else Nat.add max 1) >>-<<gst, gmem, gmax>>
+end.
+
+
+
+Definition updateLocalAtAdress (M : MemoryLayer) (addr : nat) (T : newType): MemoryLayer :=
+match M with
+|<<st, mem, max>>-<<gst, gmem, gmax>> => if (Nat.eqb addr 0) then
+       <<st, mem, max>>-<<gst, gmem, gmax>> else
+       <<st, updateMemory mem addr T, max >>-<<gst, gmem, gmax>>
+end.
+
+
+
+Definition updateAtAdress (M : MemoryLayer) (addr : nat) (T : newType) : MemoryLayer :=
+match M with
+|<<st, mem, max>>-<<gst, gmem, gmax>> => updateLocalAtAdress M addr T
+end.
 

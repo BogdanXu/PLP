@@ -27,9 +27,10 @@ Inductive ErrorBool : Type :=
 | boolVal : bool -> ErrorBool.
 
 
-Coercion num: nat >-> ErrorNat.
-Coercion str: string >-> ErrorString.
-Coercion boolean: bool >-> ErrorBool.
+Notation "'str(' S )" := (str S) (at level 0).
+Coercion num : Z >-> ErrorNat.
+Coercion boolVal : bool >-> ErrorBool.
+
 
 (*Check ErrorBool.
 Check ErrorNat.
@@ -48,49 +49,74 @@ Inductive StrExp :=
   | strlen : StrExp -> StrExp
   | toString : Var -> StrExp.
 
+Definition fun_strConcat (s1 s2: ErrorString) : ErrorString :=
+match s1 , s2 with 
+  |error_string, _ => error_string
+  |_, error_string => error_string
+  |str str1, str str2 => str (str1 ++ str2)
+end.
+
+
+
 Inductive NatExp:=
-  | natvar : Var -> NatExp
-  | natpls: NatExp -> NatExp -> NatExp
-  | natmul: NatExp -> NatExp -> NatExp 
-  | natsub: NatExp -> NatExp -> NatExp
-  | natdiv: NatExp -> NatExp -> NatExp 
-  | natmod: NatExp -> NatExp -> NatExp
-  | natnum: ErrorNat -> NatExp
-  | natstr: string -> NatExp
+| aconst : ErrorNat -> NatExp 
+| natvar : Var -> NatExp 
+| natpls : NatExp -> NatExp -> NatExp
+| natsub : NatExp -> NatExp -> NatExp
+| natmul : NatExp -> NatExp -> NatExp
+| natdiv : NatExp -> NatExp -> NatExp
+| natmod : NatExp -> NatExp -> NatExp
+| boolToNr : BoolExp -> NatExp 
+| strToNr : StrExp -> NatExp 
+| strLen : StrExp -> NatExp 
 with BoolExp :=
-  | btrue
-  | bfalse
-  | bvar : Var -> BoolExp
-  | bequal : NatExp -> NatExp -> BoolExp
-  | blessthan : NatExp -> NatExp -> BoolExp
-  | bgreaterthan : NatExp -> NatExp -> BoolExp
-  | blessthanEq : NatExp -> NatExp -> BoolExp
-  | bgreaterthanEq : NatExp -> NatExp -> BoolExp
-  | band : BoolExp -> BoolExp -> BoolExp
-  | bor : BoolExp -> BoolExp -> BoolExp
-  | bnot : BoolExp -> BoolExp
-  | bstrcmp : StrExp -> StrExp -> BoolExp
-  | bnum: ErrorBool -> BoolExp
-  | bstr: string -> BoolExp.
+| bconst : ErrorBool -> BoolExp 
+| bvar : Var -> BoolExp 
+| bnot : BoolExp -> BoolExp
+| band : BoolExp -> BoolExp -> BoolExp
+| bor : BoolExp -> BoolExp -> BoolExp
+| blessthan : NatExp -> NatExp -> BoolExp
+| blessthanEq : NatExp -> NatExp -> BoolExp
+| bgreaterthan : NatExp-> NatExp -> BoolExp
+| bgreaterthanEq : NatExp -> NatExp -> BoolExp
+| bequality : NatExp -> NatExp -> BoolExp
+| binequality : NatExp -> NatExp -> BoolExp
+| bexclusiveor : BoolExp -> BoolExp -> BoolExp
+| toBool : NatExp -> BoolExp. 
 
-Notation "A .+ B" := (natpls A B)(at level 20, left associativity).
-Notation "A .* B" := (natmul A B)(at level 19, left associativity).
-Notation "A .- B" := (natsub A B)(at level 20, left associativity).
-Notation "A ./ B" := (natdiv A B)(at level 19, left associativity).
-Notation "A .% B" := (natmod A B)(at level 19, left associativity).
+Coercion aconst : ErrorNat >-> NatExp.
+Coercion bconst : ErrorBool >-> BoolExp.
+Coercion sconst : ErrorString >-> StrExp.
+Coercion natvar : Var >-> NatExp.
+Coercion bvar : Var >-> BoolExp.
+Coercion svar : Var >-> StrExp.
 
-Notation "S .strcat S'" := (strcat S S')(at level 40).
-Notation ".upper S" := (strupper S)(at level 40).
-Notation ".lower S" := (strlower S)(at level 40).
-Notation ".strset S S'" := (strset S S')(at level 40).
+Notation "'Concat(' S1 , S2 )" := (strcat S1 S2) (at level 50, left associativity).
+Notation "'BoolToNr(' B )" := (boolToNr B) (at level 0).
+Notation "'StrToNr(' S )" := (strToNr S) (at level 0).
+Notation "'ToBool(' S )" := (toBool S) (at level 0).
+Notation "'ToStr(' S )" := (toString S) (at level 0).
+Notation "'StrLen(' S )" := (strLen S) (at level 0).
 
+(*Notatii expresii algebrice*)
+Notation "A +' B" := (natpls A B)(at level 50, left associativity).
+Notation "A -' B" := (natsub A B)(at level 50, left associativity).
+Notation "A *' B" := (natmul A B)(at level 48, left associativity).
+Notation "A /' B" := (natdiv A B)(at level 48, left associativity).
+Notation "A %' B" := (natmod A B)(at level 48, left associativity).
 
-Notation "A .< B" := (blessthan A B) (at level 70).
-Notation "A .> B" := (bgreaterthan A B) (at level 70).
-Notation ".! A" := (bnot A)(at level 71).
-Notation "A .&& B" := (band A B)(at level 72).
-Notation "A .|| B" := (bor A B)(at level 73).
-Notation "A .strcmp B" := (bstrcmp A B)(at level 73).
+ 
+(*Notatii expresii booleene*)
+Notation "!' A" := (bnot A) (at level 45, right associativity).
+Notation "A &&' B" := (band A B) (at level 55, left associativity).
+Notation "A ||' B" := (band A B) (at level 56, left associativity).
+Notation "A 'xor' B" := (bexclusiveor A B) (at level 56, left associativity).
+Notation "A <=' B" := (blessthanEq A B) (at level 52, left associativity).
+Notation "A <' B" := (blessthan A B) (at level 52, left associativity).
+Notation "A >=' B" := (bgreaterthanEq A B) (at level 52, left associativity).
+Notation "A >' B" := (bgreaterthan A B) (at level 52, left associativity).
+Notation "A ==' B" := (bequality A B) (at level 53, left associativity).
+Notation "A !=' B" := (bequality A B) (at level 53, left associativity).
 
 Inductive Stmt :=
   | declare_nat: Var -> NatExp -> Stmt 
@@ -128,47 +154,6 @@ Reserved Notation "A =[ S ]=> N" (at level 90).
 Reserved Notation "B ={ S }=> B'" (at level 91).
 Reserved Notation "B ={ S }=> B'" (at level 91).
 Reserved Notation "S -{ Sigma }-> Sigma'" (at level 90).
-
-Coercion natnum: ErrorNat >-> NatExp.
-Coercion natstr: string >-> NatExp. 
-Coercion bnum: ErrorBool >-> BoolExp.
-Coercion bstr: string >-> BoolExp. 
-Coercion strvar: string >-> StrExp.
-
-Definition plsmergi1 :=
-  .Nat "i" ::= 0,
-  .Nat "j" ::= 1,
-  .Nat "k" ::= 0, 
-  "k" .n= "i" .+ "j", 
-  "j" .n= "j" .- "i",
-  "i" .n= "j" .* "i", 
-  "j" .n= 2 .+ 1,
-  "j" .n= "i" ./ "j",   "j" .n= "i" .% "j".
-
-Check plsmergi1.
-
-
-Definition plsmergi2 :=
-  "b1" .b= true,
-  .Bool "b1" ::= true,
-  .Bool "b2" ::= false,
-  .ford ("i" .n= 1 ; "i" .< 5 ; "i" .n= "i".+1)==>{"s1" .s= "s1" .strcat "hello"}.
-
-Check plsmergi2.
-  
-Definition plsmergi3 :=
-  .whiled ("k" .> 10)==>{"b1" .b= false}.
-
-Check plsmergi3.
-  
-Definition plsmergi4 :=
-  .ford ("i" .n= 1 ; "i" .< 5 ; "i" .n= "i" .+ 1)==>{"b1" .b= false},
-  .Bool "b1" ::= true,
-  .Bool "b2" ::= false,
-  .whiled ("k" .> 10)==>{"b1" .b= false}. 
-  
-
-
 
 
 

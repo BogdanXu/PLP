@@ -691,3 +691,25 @@ Proof.
   -simpl. trivial.
 Qed.
 
+Example ex : exists stack', 
+              (
+                int' "x" <-- 0 ;;
+                do'{
+                   "x" :N= "x" +' 2
+                }while("x" <' 0)
+              )-[ stack0 ]=> stack'
+    /\ getVal stack' "x" = 2.
+Proof.
+  eexists.
+  split.
+  -eapply st_secv.
+    +eapply st_int. eapply e_const. unfold updateLocal. simpl. trivial.
+    +eapply st_dowhile_false. 
+      *eapply st_asigint. simpl. trivial.
+       eapply e_add. eapply e_var. eapply e_const. simpl. trivial.
+       unfold updateLocal. simpl. trivial.
+      *eapply e_lessthan. eapply e_var. eapply e_const.
+       simpl. unfold Z.ltb. simpl. trivial.
+  -unfold updateMemory. simpl. trivial.
+Qed.
+

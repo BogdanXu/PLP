@@ -145,6 +145,11 @@ Inductive newType : Type :=
 | strType : ErrorString -> newType
 | code : Stmt -> newType.
 
+Coercion nrType : ErrorNat >-> newType.
+Coercion boolType : ErrorBool >-> newType.
+Coercion strType : ErrorString >-> newType.
+Coercion code : Stmt >-> newType.
+
 Notation "'int'' V <-- E" := (decl_int V E) (at level 90, right associativity).
 Notation "'bool'' V <-- E" := (decl_bool V E) (at level 90, right associativity).
 Notation "'string'' V <-- E" := (decl_string V E) (at level 90, right associativity).

@@ -338,3 +338,257 @@ match a, b with
 | _ , _ => error
 end.
 
+Definition newMinus (a b : newType) :=
+match a, b with
+| nrType a', nrType b' => match a', b' with
+                        | num n1, num n2 => nrType (n1 - n2)
+                        | _, _ => nrType errNr
+                        end
+| _ , _ => error
+end.
+
+Definition newTimes (a b : newType) :=
+match a, b with
+| nrType a', nrType b' => match a', b' with
+                        | num n1, num n2 => nrType (n1 * n2)
+                        | _, _ => nrType errNr
+                        end
+| _ , _ => error
+end.
+
+Definition newDivide (a b : newType) :=
+match a, b with
+| nrType a', nrType b' => match a', b' with
+                        | num n1, num n2 => if (Z.eqb n2 0) then nrType errNr else nrType (n1 / n2)
+                        | _, _ => nrType errNr
+                        end
+| _ , _ => error
+end.
+
+Definition newModulo (a b : newType) :=
+match a, b with
+| nrType a', nrType b' => match a', b' with
+                        | num n1, num n2 => if (Z.eqb n2 0) then nrType errNr else nrType (Z.modulo n1 n2)
+                        | _, _ => nrType errNr
+                        end
+| _ , _ => error
+end.
+
+Definition newPower (a b : newType) :=
+match a, b with
+| nrType a', nrType b' => match a', b' with
+                        | num n1, num n2 => if (Z.ltb n2 0) then nrType errNr else nrType (Z.pow n1 n2)
+                        | _, _ => nrType errNr
+                        end
+| _ , _ => error
+end.
+
+Definition newStrlen (a : newType) :=
+match a with
+| strType a' => nrType ( fun_strlen a' )
+| _ => error
+end.
+
+Definition newStrcat (s1 s2 : newType) := 
+match s1, s2 with
+| strType s1', strType s2' => strType ( fun_strConcat s1' s2' )
+| _, _ => error
+end.
+
+Definition newToNr (a : newType) := 
+match a with
+|nrType n => nrType n
+|boolType a' => match a' with
+                | errBool => nrType errNr
+                | boolVal b => if (b) then (nrType 1) else (nrType 0)
+                end
+|strType s' => match s' with 
+               | str s => str_toNewNr s
+               | errStr => nrType errNr
+               end
+|_ => nrType errNr
+end.
+
+Definition notb (a : bool) : bool :=
+match a with
+| true => false
+| false => true
+end.
+
+Definition newComp (type : string) (a b : newType) : newType := 
+match a, b with
+| nrType a', nrType b' 
+          => match a', b' with
+          | num a'', num b'' 
+                        => match type with
+                           | "lt" => boolType (Z.ltb a'' b'')
+                           | "le" => boolType (Z.leb a'' b'')
+                           | "gt" => boolType (Z.ltb b'' a'')
+                           | "ge" => boolType (Z.leb b'' a'')
+                           | "eq" => boolType (Z.eqb a'' b'')
+                           | _ => boolType (notb (Z.eqb a'' b'') )
+                           end
+          | _, _ => boolType errBool
+          end
+| _, _ => error
+end.
+
+Definition newOrB (a b : newType) : newType := 
+match a, b with
+| boolType a', boolType b' => match a', b' with
+                              | boolVal a'', boolVal b'' => boolType (orb a'' b'')
+                              | _, _ => boolType errBool
+                              end
+| _, _ => error
+end.
+
+
+Definition newToBool (a : newType) := 
+match a with
+| boolType b => boolType b
+| nrType a' => match a' with
+                | errNr => boolType errBool
+                | num n => if (Z.eqb n 0) then (boolType false) else (boolType true)
+                end
+| strType s => match s with
+               | str s'=> if (string_dec s' "true") then (boolType true) 
+                              else (boolType false)
+               | errStr => boolType errBool
+               end
+|_ => boolType errBool
+end.
+
+Definition newToStr (a : newType) :=
+match a with 
+| boolType b => match b with 
+                | errBool => error_string
+                | boolVal b' => if (b') then str("true") else str("false")
+                end
+| strType s => strType s
+| nrType n => match n with
+              | errNr => error_string
+              | num n' => str(nr_to_string n')
+              end
+| _ => strType error_string
+end.
+
+Compute newToStr (nrType 10).
+
+
+Reserved Notation "STR '=S[' St ']S>' N" (at level 60).
+Inductive seval : StrExp -> MemoryLayer -> newType -> Prop :=
+| s_const : forall s sigma, sconst s =S[ sigma ]S> strType s
+| s_var : forall s sigma, svar s =S[ sigma ]S> getVal sigma s
+| s_concat : forall s1 s2 sigma s st1 st2,
+    s1 =S[ sigma ]S> st1 ->
+    s2 =S[ sigma ]S> st2 ->
+    s = newStrcat st1 st2 ->
+    Concat( s1 , s2 ) =S[ sigma ]S> s
+| s_tostr : forall s1 sigma t1 a,
+    t1 = getVal sigma s1 ->
+    a = newToStr t1 ->
+    ToStr( s1 ) =S[ sigma ]S> a
+where "STR '=S[' St ']S>' N" := (seval STR St N).
+
+
+Reserved Notation "B '=B[' S ']B>' B'" (at level 70).
+Reserved Notation "A '=A[' S ']A>' N" (at level 60).
+Inductive aeval : NatExp -> MemoryLayer -> newType -> Prop :=
+| e_const : forall n sigma, aconst n =A[ sigma ]A> nrType n
+| e_var : forall v sigma, natvar v =A[ sigma ]A> getVal sigma v
+| e_add : forall a1 a2 i1 i2 sigma n,
+    a1 =A[ sigma ]A> i1 ->
+    a2 =A[ sigma ]A> i2 ->
+    n = newPlus i1 i2 ->
+    a1 +' a2 =A[ sigma ]A> n
+| e_sub : forall a1 a2 i1 i2 sigma n,
+    a1 =A[ sigma ]A> i1 ->
+    a2 =A[ sigma ]A> i2 ->
+    n = newMinus i1 i2 ->
+    a1 -' a2 =A[ sigma ]A> n
+| e_times : forall a1 a2 i1 i2 sigma n,
+    a1 =A[ sigma ]A> i1 ->
+    a2 =A[ sigma ]A> i2 ->
+    n = newTimes i1 i2 ->
+    a1 *' a2 =A[ sigma ]A> n
+| e_divided : forall a1 a2 i1 i2 sigma n,
+    a1 =A[ sigma ]A> i1 ->
+    a2 =A[ sigma ]A> i2 ->
+    n = newDivide i1 i2 ->
+    a1 /' a2 =A[ sigma ]A> n
+| e_div_rest : forall a1 a2 i1 i2 sigma n,
+    a1 =A[ sigma ]A> i1 ->
+    a2 =A[ sigma ]A> i2 ->
+    n = newModulo i1 i2 ->
+    a1 %' a2 =A[ sigma ]A> n
+| e_strlen : forall a1 sigma s1 n,
+    a1 =S[ sigma ]S> s1 ->
+    n = newStrlen s1 ->
+    StrLen( a1 ) =A[ sigma ]A> n
+| e_booltonr : forall b1 sigma t1 a,
+    b1 =B[ sigma ]B> t1 ->
+    a = newToNr t1 ->
+    BoolToNr( b1 ) =A[ sigma ]A> a
+| e_strtonr : forall s1 sigma t1 a,
+    s1 =S[ sigma ]S> t1 ->
+    a = newToNr t1 ->
+    StrToNr( s1 ) =A[ sigma ]A> a
+where "A '=A[' S ']A>' N" := (aeval A S N)
+with beval : BoolExp -> MemoryLayer -> newType -> Prop :=
+| e_true : forall sigma, true =B[ sigma ]B> boolType true
+| e_false : forall sigma, false =B[ sigma ]B> boolType false
+| e_bvar : forall v sigma, bvar v =B[ sigma ]B> getVal sigma v
+| e_lessthan : forall a1 a2 i1 i2 sigma b,
+    a1 =A[ sigma ]A> i1 ->
+    a2 =A[ sigma ]A> i2 ->
+    b = newComp "lt" i1 i2 ->
+    a1 <' a2 =B[ sigma ]B> b
+| e_lessthan_eq : forall a1 a2 i1 i2 sigma b,
+    a1 =A[ sigma ]A> i1 ->
+    a2 =A[ sigma ]A> i2 ->
+    b = newComp "le" i1 i2 ->
+    a1 <=' a2 =B[ sigma ]B> b
+| e_greaterthan : forall a1 a2 i1 i2 sigma b,
+    a1 =A[ sigma ]A> i1 ->
+    a2 =A[ sigma ]A> i2 ->
+    b = newComp "gt" i1 i2 ->
+    a1 >' a2 =B[ sigma ]B> b
+| e_greaterthan_eq : forall a1 a2 i1 i2 sigma b,
+    a1 =A[ sigma ]A> i1 ->
+    a2 =A[ sigma ]A> i2 ->
+    b = newComp "ge" i1 i2 ->
+    a1 >=' a2 =B[ sigma ]B> b
+| e_nottrue : forall b sigma,
+    b =B[ sigma ]B> boolType true ->
+    (!' b) =B[ sigma ]B> boolType false
+| e_notfalse : forall b sigma,
+    b =B[ sigma ]B> boolType false ->
+    (!' b) =B[ sigma ]B> boolType true
+| e_andtrue : forall b1 b2 sigma t,
+    b1 =B[ sigma ]B> boolType true ->
+    b2 =B[ sigma ]B> t ->
+    b1 &&' b2 =B[ sigma ]B> t
+| e_andfalse : forall b1 b2 sigma,
+    b1 =B[ sigma ]B>boolType false ->
+    b1 &&' b2 =B[ sigma ]B> boolType false
+| e_or : forall b1 b2 sigma t t1 t2,
+    b1 =B[ sigma ]B> t1 ->
+    b2 =B[ sigma ]B> t2 ->
+    t = newOrB t1 t2 ->
+    b1 ||' b2 =B[ sigma ]B> t
+| e_equality : forall a1 a2 i1 i2 sigma b,
+    a1 =A[ sigma ]A> i1 ->
+    a2 =A[ sigma ]A> i2 ->
+    b = newComp "eq" i1 i2 ->
+    a1 ==' a2 =B[ sigma ]B> b
+| e_inequality : forall a1 a2 i1 i2 sigma b,
+    a1 =A[ sigma ]A> i1 ->
+    a2 =A[ sigma ]A> i2 ->
+    b = newComp "ineq" i1 i2 ->
+    a1 !=' a2 =B[ sigma ]B> b
+
+| e_tobool : forall a1 sigma i1 b,
+    a1 =A[ sigma ]A> i1 ->
+    b = newToBool i1 ->
+    ToBool( a1 ) =B[ sigma ]B> b
+where "B '=B[' S ']B>' B'" := (beval B S B').

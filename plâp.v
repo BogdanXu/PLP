@@ -592,3 +592,102 @@ with beval : BoolExp -> MemoryLayer -> newType -> Prop :=
     b = newToBool i1 ->
     ToBool( a1 ) =B[ sigma ]B> b
 where "B '=B[' S ']B>' B'" := (beval B S B').
+
+Definition stack1 := updateLocal stack0 "x" (boolType true) (getLocalMaxPos stack0).
+Definition stack2 := updateLocal stack1 "y" (boolType false) (getLocalMaxPos stack1).
+
+Definition getStmt (cod : newType) : Stmt :=
+match cod with
+| code stmt => stmt
+| _ => skip
+end.
+
+
+Reserved Notation " L -[ M1 ]=> M2" (at level 60).
+Inductive stmt_eval : Stmt -> MemoryLayer -> MemoryLayer -> Prop :=
+| st_skip : forall sigma,
+   ( skip )-[ sigma ]=> sigma
+| st_secv : forall s1 s2 sigma sigma1 sigma2,
+   ( s1 )-[ sigma ]=> sigma1 ->
+   ( s2 )-[ sigma1 ]=> sigma2 ->
+   ( s1 ;; s2 )-[ sigma ]=> sigma2
+| st_int : forall s a val sigma sigma1,
+    val =A[ sigma ]A> a ->
+    sigma1 = updateLocal sigma s a (getLocalMaxPos sigma) ->
+    ( int' s <-- val )-[ sigma ]=> sigma1
+| st_bool : forall s b val sigma sigma1,
+    val =B[ sigma ]B> b ->
+    sigma1 = updateLocal sigma s b (getLocalMaxPos sigma) ->
+    ( bool' s <-- val)-[ sigma ]=> sigma1
+| st_string : forall s val sigma sigma1 str,
+    val =S[ sigma ]S> str ->
+    sigma1 = updateLocal sigma s str (getLocalMaxPos sigma) ->
+    ( string' s <-- val )-[ sigma ]=> sigma1
+| st_asigint : forall s a val sigma sigma1,
+    EqForTypes (getVal sigma s) (nrType 0) = true ->
+    val =A[ sigma ]A> a ->
+    sigma1 = updateAtAdress sigma (getAdress sigma s) a ->
+    ( s :N= val )-[ sigma ]=> sigma1
+| st_asigbool : forall s b val sigma sigma1,
+    EqForTypes (getVal sigma s) (boolType false) = true ->
+    val =B[ sigma ]B> b ->
+    sigma1 = updateAtAdress sigma (getAdress sigma s) b ->
+    ( s :B= val )-[ sigma ]=> sigma1
+| st_asigstring : forall s val sigma sigma1 str,
+    EqForTypes (getVal sigma s) (strType str("") ) = true ->
+    val =S[ sigma ]S> str ->
+    sigma1 = updateAtAdress sigma (getAdress sigma s) str  ->
+    ( s :S= val )-[ sigma ]=> sigma1
+| st_iffalse : forall b s1 sigma,
+    b =B[ sigma ]B> false ->
+    ( ifthen b s1 )-[ sigma ]=> sigma
+| st_iftrue : forall b s1 sigma sigma1,
+    b =B[ sigma ]B> true ->
+    ( s1 )-[ sigma ]=> sigma1 ->
+    ( ifthen b s1 )-[ sigma ]=> sigma1
+| st_ifelsefalse : forall b s1 s2 sigma sigma2,
+    b =B[ sigma ]B> false ->
+    ( s2 )-[ sigma ]=> sigma2 ->
+    ( ifthenelse b s1 s2 )-[ sigma ]=> sigma2
+| st_ifelsetrue : forall b s1 s2 sigma sigma1,
+    b =B[ sigma ]B> true ->
+    ( s1 )-[ sigma ]=> sigma1 ->
+    ( ifthenelse b s1 s2 )-[ sigma ]=> sigma1
+| st_whilefalse : forall b s sigma,
+    b =B[ sigma ]B> false ->
+    ( whileloop b s )-[ sigma ]=> sigma
+| st_whiletrue : forall b s sigma sigma1,
+    b =B[ sigma ]B> true ->
+    ( s ;; whileloop b s )-[ sigma ]=> sigma1 ->
+    ( whileloop b s )-[ sigma ]=> sigma1
+| st_forloop_false : forall a b st s1 sigma sigma1,
+    ( a )-[ sigma ]=> sigma1 ->
+    b =B[ sigma1 ]B> false ->
+    ( forloop a b st s1 )-[ sigma ]=> sigma1
+| st_forloop_true : forall a b st s1 sigma sigma1 sigma2,
+    ( a )-[ sigma ]=> sigma1 ->
+    (whileloop b (s1 ;; st) )-[ sigma1 ]=> sigma2 ->
+    ( forloop a b st s1 )-[ sigma ]=> sigma2
+| st_dowhile_true : forall st b sigma sigma' sigma'',
+    st -[ sigma ]=> sigma' ->
+    b =B[ sigma' ]B> true ->
+    ( whileloop b st ) -[ sigma' ]=> sigma'' ->
+    do'{ st }while( b ) -[ sigma ]=> sigma'
+| st_dowhile_false : forall st b sigma sigma',
+    st -[ sigma ]=> sigma' ->
+    b =B[ sigma' ]B> false ->
+    do'{ st }while( b ) -[ sigma ]=> sigma'
+where "L -[ M1 ]=> M2" := (stmt_eval L M1 M2).
+
+Example ex_expr : BoolToNr("x") +' BoolToNr(!' "y") =A[ stack2 ]A> nrType 2.
+Proof. 
+  eapply e_add.
+  -eapply e_booltonr.
+    +eapply e_bvar.
+    +simpl. trivial.
+  -eapply e_booltonr. 
+    +eapply e_notfalse. eapply e_bvar.
+    +simpl. trivial.
+  -simpl. trivial.
+Qed.
+

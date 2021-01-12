@@ -1,24 +1,30 @@
-Require Import Strings.String.
-Scheme Equality for string.
-Require Import Arith_base.
-Require Vectors.Fin.
-Import EqNotations.
+Require Import Ascii String.
+Require Import Coq.ZArith.BinInt.
+Require Import Coq.Numbers.BinNums.
+Require Import Coq.Lists.List.
+Require Import Extraction.
 Local Open Scope string_scope.
 Local Open Scope list_scope.
 Local Open Scope nat_scope.
 Local Open Scope N_scope.
 Local Open Scope Z_scope.
-Inductive ErrorNat :=
-  | error_nat : ErrorNat
-  | num : nat -> ErrorNat.
 
-Inductive ErrorString :=
-  | error_string : ErrorString
-  | str : string -> ErrorString.
+Inductive Var :=
+|Id : string -> Var.
+Coercion Id : string >-> Var.
+Scheme Equality for Var.
 
-Inductive ErrorBool :=
-  | error_bool : ErrorBool
-  | boolean : bool -> ErrorBool.
+Inductive ErrorString : Type :=
+| error_string : ErrorString
+| str : string -> ErrorString.
+
+Inductive ErrorNat : Type :=
+| errNr : ErrorNat
+| num : Z -> ErrorNat.
+
+Inductive ErrorBool : Type :=
+| errBool : ErrorBool
+| boolVal : bool -> ErrorBool.
 
 
 Coercion num: nat >-> ErrorNat.
@@ -30,20 +36,36 @@ Check ErrorNat.
 Check ErrorString.
 Check bool.*)
 
+Inductive StrExp :=
+  | sconst : ErrorString -> StrExp
+  | strcat : StrExp -> StrExp -> StrExp
+  | svar : Var -> StrExp
+  | strupper : StrExp -> StrExp
+  | strlower : StrExp -> StrExp
+  | strset : StrExp -> StrExp -> StrExp
+  | strvar : string -> StrExp
+  | strnat : nat -> StrExp
+  | strlen : StrExp -> StrExp
+  | toString : Var -> StrExp.
+
 Inductive NatExp:=
+  | natvar : Var -> NatExp
   | natpls: NatExp -> NatExp -> NatExp
   | natmul: NatExp -> NatExp -> NatExp 
   | natsub: NatExp -> NatExp -> NatExp
   | natdiv: NatExp -> NatExp -> NatExp 
   | natmod: NatExp -> NatExp -> NatExp
   | natnum: ErrorNat -> NatExp
-  | natstr: string -> NatExp.
-Inductive BoolExp :=
+  | natstr: string -> NatExp
+with BoolExp :=
   | btrue
   | bfalse
+  | bvar : Var -> BoolExp
   | bequal : NatExp -> NatExp -> BoolExp
   | blessthan : NatExp -> NatExp -> BoolExp
   | bgreaterthan : NatExp -> NatExp -> BoolExp
+  | blessthanEq : NatExp -> NatExp -> BoolExp
+  | bgreaterthanEq : NatExp -> NatExp -> BoolExp
   | band : BoolExp -> BoolExp -> BoolExp
   | bor : BoolExp -> BoolExp -> BoolExp
   | bnot : BoolExp -> BoolExp
@@ -57,14 +79,6 @@ Notation "A .- B" := (natsub A B)(at level 20, left associativity).
 Notation "A ./ B" := (natdiv A B)(at level 19, left associativity).
 Notation "A .% B" := (natmod A B)(at level 19, left associativity).
 
-Inductive StrExp :=
-  | strcat : StrExp -> StrExp -> StrExp
-  | strupper : StrExp -> StrExp
-  | strlower : StrExp -> StrExp
-  | strset : StrExp -> StrExp -> StrExp
-  | strvar : string -> StrExp
-  | strnat : nat -> StrExp
-  | strlen : StrExp -> StrExp.
 Notation "S .strcat S'" := (strcat S S')(at level 40).
 Notation ".upper S" := (strupper S)(at level 40).
 Notation ".lower S" := (strlower S)(at level 40).
@@ -79,13 +93,17 @@ Notation "A .|| B" := (bor A B)(at level 73).
 Notation "A .strcmp B" := (bstrcmp A B)(at level 73).
 
 Inductive Stmt :=
-  | declare_nat: string -> NatExp -> Stmt 
-  | declare_string: string -> StrExp -> Stmt 
-  | declare_bool: string -> BoolExp -> Stmt 
+  | declare_nat: Var -> NatExp -> Stmt 
+  | declare_string: Var -> StrExp -> Stmt 
+  | declare_bool: Var -> BoolExp -> Stmt 
  
-  | nat_assign : string -> NatExp -> Stmt 
-  | str_assign : string -> StrExp -> Stmt 
-  | bool_assign : string -> BoolExp -> Stmt
+  | nat_assign : Var -> NatExp -> Stmt 
+  | str_assign : Var -> StrExp -> Stmt 
+  | bool_assign : Var -> BoolExp -> Stmt
+
+  | skip : Stmt 
+  | break : Stmt 
+  | continue : Stmt
 
   | while : BoolExp -> Stmt -> Stmt
   | ifthen : BoolExp -> Stmt -> Stmt

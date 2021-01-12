@@ -3,9 +3,8 @@ Require Import Coq.ZArith.BinInt.
 Require Import Coq.Numbers.BinNums.
 Require Import Coq.Lists.List.
 Require Import Extraction.
-Local Open Scope string_scope.
+Local Open Scope string_scope. 
 Local Open Scope list_scope.
-Local Open Scope nat_scope.
 Local Open Scope N_scope.
 Local Open Scope Z_scope.
 
@@ -26,28 +25,15 @@ Inductive ErrorBool : Type :=
 | errBool : ErrorBool
 | boolVal : bool -> ErrorBool.
 
-
 Notation "'str(' S )" := (str S) (at level 0).
 Coercion num : Z >-> ErrorNat.
 Coercion boolVal : bool >-> ErrorBool.
 
-
-(*Check ErrorBool.
-Check ErrorNat.
-Check ErrorString.
-Check bool.*)
-
 Inductive StrExp :=
-  | sconst : ErrorString -> StrExp
-  | strcat : StrExp -> StrExp -> StrExp
-  | svar : Var -> StrExp
-  | strupper : StrExp -> StrExp
-  | strlower : StrExp -> StrExp
-  | strset : StrExp -> StrExp -> StrExp
-  | strvar : string -> StrExp
-  | strnat : nat -> StrExp
-  | strlen : StrExp -> StrExp
-  | toString : Var -> StrExp.
+| sconst : ErrorString -> StrExp 
+| svar : Var -> StrExp 
+| strcat : StrExp -> StrExp -> StrExp 
+| toString : Var -> StrExp. 
 
 Definition fun_strConcat (s1 s2: ErrorString) : ErrorString :=
 match s1 , s2 with 
@@ -56,7 +42,97 @@ match s1 , s2 with
   |str str1, str str2 => str (str1 ++ str2)
 end.
 
+Fixpoint Length_help (s : string) : Z :=
+  match s with
+  | EmptyString => Z0
+  | String c s' => 1 + Length_help s'
+  end.
 
+Definition fun_strlen (s : ErrorString) : ErrorNat :=
+match s with 
+| error_string => errNr
+| str str1 => num (Length_help str1)
+end.
+
+Definition Z_of_bool (b : bool) := if b then 1 else 0.
+Definition Z_of_ascii (a : ascii) : Z:=
+  match a with
+   Ascii b1 b2 b3 b4 b5 b6 b7 b8 =>
+     Z_of_bool b1 + 2 * (Z_of_bool b2 + 2 * (Z_of_bool b3 + 2 * (Z_of_bool b4 + 2 *
+      (Z_of_bool b5 + 2 * (Z_of_bool b6 + 2 * (Z_of_bool b7 + 2 * Z_of_bool b8))))))
+  end.
+
+Definition Z_of_0 := Eval compute in Z_of_ascii "0".
+Definition Z_of_digit a := 
+   let v := Z_of_ascii a - Z_of_0 in
+   match v ?= 0 with
+     Lt => None | Eq => Some v | 
+     Gt => match v ?= 10 with Lt => Some v | _ => None end
+   end.
+Fixpoint str_to_num (s : string) : option (Z * Z) :=
+  match s with
+    EmptyString => None
+  | String a s' => 
+    match Z_of_digit a with
+      None => None
+    | Some va =>
+      match str_to_num s' with
+        None => Some (va, 1)
+      | Some (vs, n) => Some (va * 10 ^ n + vs, n+1)
+      end
+    end
+  end.
+Definition num_to_ErrorNat (n : option(Z*Z)) : ErrorNat :=
+match n with
+| None => errNr
+| Some (nr, _) => num nr
+end.
+Definition str_toNewNr (s : string) : ErrorNat :=
+match s with
+| EmptyString => errNr
+| String a s' => if (ascii_dec a "-") 
+        then (match (num_to_ErrorNat (str_to_num s')) with
+              | errNr => errNr
+              | num nr => num (0 - nr) end
+        ) 
+        else (match (num_to_ErrorNat (str_to_num s)) with
+              | errNr => errNr
+              | num nr => num nr end
+        )
+end.
+
+Definition digit_to_ascii (n : Z) : ascii :=
+match n with
+|Z0 => "0"
+|1 => "1"
+|2 => "2"
+|3 => "3"
+|4 => "4"
+|5 => "5"
+|6 => "6"
+|7 => "7"
+|8 => "8"
+|9 => "9"
+|_ => ascii_of_nat 1
+end.
+
+Fixpoint nr_to_string_aux (time : nat) (n : Z) (acc : string) : string :=
+  let acc' := String (digit_to_ascii (n mod 10)) acc in
+  match time with
+    | 0%nat => acc'
+    | S time' =>
+      match n / 10 with
+        | 0 => acc'
+        | n' => nr_to_string_aux time' n' acc'
+      end
+  end.
+
+Definition nr_to_string (n : Z) : string :=
+match n with
+| Z0 => "0"
+| Zpos _ => nr_to_string_aux 15 n ""
+| Zneg l => String "-" (nr_to_string_aux 15 (Zpos l) "")
+end.
 
 Inductive NatExp:=
 | aconst : ErrorNat -> NatExp 
@@ -138,17 +214,20 @@ Inductive Stmt :=
 | forloop : Stmt -> BoolExp -> Stmt -> Stmt -> Stmt
 | apelfunc : Var -> list Var -> Stmt.
 
+
 Inductive newType : Type :=
 | error : newType 
 | nrType : ErrorNat -> newType 
-| boolType : ErrorBool -> newType
-| strType : ErrorString -> newType
-| code : Stmt -> newType.
+| boolType : ErrorBool -> newType 
+| strType : ErrorString -> newType 
+| code : Stmt -> newType. 
 
 Coercion nrType : ErrorNat >-> newType.
 Coercion boolType : ErrorBool >-> newType.
 Coercion strType : ErrorString >-> newType.
 Coercion code : Stmt >-> newType.
+
+
 
 Notation "'int'' V <-- E" := (decl_int V E) (at level 90, right associativity).
 Notation "'bool'' V <-- E" := (decl_bool V E) (at level 90, right associativity).
@@ -162,8 +241,12 @@ Notation "'if'(' B ) 'then'{' S1 '}else'{' S2 '}end'" := (ifthenelse B S1 S2) (a
 Notation "'while'(' B ) 'do'{' S }" := (whileloop B S) (at level 97).
 Notation "'do'{' S '}while(' B )" := (dowhile S B) (at level 97).
 Notation "'for'(' I ; B ; A ) 'do'{' S }" := (forloop I B A S) (at level 97).
+
+
+
 Notation "'write(' S )" := (scrie S) (at level 92).
 Notation "'read(' V )" := (citeste V) (at level 92).
+
 
 Definition EqForTypes (a b : newType) : bool :=
 match a, b with
@@ -231,6 +314,14 @@ Definition updateAtAdress (M : MemoryLayer) (addr : nat) (T : newType) : MemoryL
 match M with
 |<<st, mem, max>>-<<gst, gmem, gmax>> => updateLocalAtAdress M addr T
 end.
+
+
+
+
+
+
+
+
 
 
  
